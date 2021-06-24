@@ -44,16 +44,16 @@ print('Converting training set...')
 
 attr_dict = dict()
 attr_dict["categories"] = [
-    {"supercategory": "none", "id": 1, "name": "person"},
-    {"supercategory": "none", "id": 2, "name": "rider"},
-    {"supercategory": "none", "id": 3, "name": "car"},
-    {"supercategory": "none", "id": 4, "name": "bus"},
-    {"supercategory": "none", "id": 5, "name": "truck"},
-    {"supercategory": "none", "id": 6, "name": "bike"},
-    {"supercategory": "none", "id": 7, "name": "motor"},
-    {"supercategory": "none", "id": 8, "name": "traffic light"},
-    {"supercategory": "none", "id": 9, "name": "traffic sign"},
-    {"supercategory": "none", "id": 10, "name": "train"}
+    {"supercategory": "none", "id": 0, "name": "person"},
+    {"supercategory": "none", "id": 1, "name": "rider"},
+    {"supercategory": "none", "id": 2, "name": "car"},
+    {"supercategory": "none", "id": 3, "name": "bus"},
+    {"supercategory": "none", "id": 4, "name": "truck"},
+    {"supercategory": "none", "id": 5, "name": "bike"},
+    {"supercategory": "none", "id": 6, "name": "motor"},
+    {"supercategory": "none", "id": 7, "name": "traffic light"},
+    {"supercategory": "none", "id": 8, "name": "traffic sign"},
+    {"supercategory": "none", "id": 9, "name": "train"}
 ]
 
 id_dict = {i['name']: i['id'] for i in attr_dict['categories']}
