@@ -61,7 +61,7 @@ id_dict = {i['name']: i['id'] for i in attr_dict['categories']}
 
 counter = 0
 for i in tqdm(labeled_images):
-    if i['attributes'][attribute] != flag:
+    if i['attributes'][args.attribute] != args.flag:
         continue
     label_text = ''
     for label in i['labels']:
