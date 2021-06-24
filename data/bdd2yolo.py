@@ -66,8 +66,6 @@ for i in tqdm(labeled_images):
     label_text = ''
     for label in i['labels']:
         if label['category'] in id_dict.keys():
-            annotation["iscrowd"] = 0
-            annotation["image_id"] = image['id']
             x1 = label['box2d']['x1']
             y1 = label['box2d']['y1']
             x2 = label['box2d']['x2']
