@@ -72,7 +72,7 @@ for i in tqdm(labeled_images):
             x2 = label['box2d']['x2']
             y2 = label['box2d']['y2']
             category_id = id_dict[label['category']]
-            label_text += '\n' + str(category_id) + ' ' + str(x1) + ' ' + str(y1) + ' ' + str(x2 - x1) + ' ' + str(y2 - y1)
+            label_text += '\n' + str(category_id) + ' ' + str((x1 + x2) / 2 * 1280) + ' ' + str((y1 + y2) / 2 * 720) + ' ' + str((x2 - x1) / 1280) + ' ' + str((y2 - y1) / 720)
     copyfile(os.path.join(args.image_dir, i['name']), os.path.join(args.save_path,  args.flag, args.split, 'images', i['name']))
     if len(label_text) > 0:
         label_text = label_text[1:]
