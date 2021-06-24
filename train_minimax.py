@@ -340,7 +340,7 @@ def train(hyp, opt, device, tb_writer=None):
             # Forward
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
-                loss, discrep = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                loss, _ = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
                 if opt.quad:
@@ -399,6 +399,7 @@ def train(hyp, opt, device, tb_writer=None):
                 loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
                 loss = loss1 - loss2
                 loss_items = torch.cat([items, discrep])
+
                 
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode

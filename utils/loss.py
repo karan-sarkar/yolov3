@@ -171,8 +171,9 @@ class ComputeLoss:
         else:
             return ldis, ldis.detach()
             
-    def build_targets(self, p, targets):
+    def build_targets(self, p, t):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
+        targets = t.copy().to(t.device)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         tcls, tbox, indices, anch = [], [], [], []
         gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
