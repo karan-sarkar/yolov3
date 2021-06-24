@@ -158,15 +158,15 @@ class ComputeLoss:
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
-        if self.autobalance:
-            self.balance = [x / self.balance[self.ssi] for x in self.balance]
-        lbox *= self.hyp['box']
-        lobj *= self.hyp['obj']
-        lcls *= self.hyp['cls']
-        bs = tobj.shape[0]  # batch size
-
-        loss = lbox + lobj + lcls
         if not discrep:
+            if self.autobalance:
+                self.balance = [x / self.balance[self.ssi] for x in self.balance]
+            lbox *= self.hyp['box']
+            lobj *= self.hyp['obj']
+            lcls *= self.hyp['cls']
+            bs = tobj.shape[0]  # batch size
+
+            loss = lbox + lobj + lcls
             return loss * bs, torch.cat((lbox, lobj, lcls, loss)).detach()
         else:
             return ldis, ldis.detach()
