@@ -291,14 +291,18 @@ def train(hyp, opt, device, tb_writer=None):
             dataloader.sampler.set_epoch(epoch)
             target_dataloader.sampler.set_epoch(epoch)
         pbar = enumerate(zip(dataloader, target_dataloader))
-        logger.info(('\n' + '%10s' * 8) % ('Epoch', 'gpu_mem', 'box', 'obj', 'cls', 'total', 'labels', 'img_size'))
+        logger.info(('\n' + '%10s' * 8) % ('Epoch', 'gpu_mem', 'box', 'obj', 'cls', 'total', 'discrep', 'labels', 'img_size'))
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
         c_optimizer.zero_grad()
         for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
+            if imgs.shape[0] != target_imgs.shape[0]:
+                break
+            
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+            target_imgs = target_imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
             # Warmup
             if ni <= nw:
@@ -323,11 +327,20 @@ def train(hyp, opt, device, tb_writer=None):
                 if sf != 1:
                     ns = [math.ceil(x * sf / gs) * gs for x in imgs.shape[2:]]  # new shape (stretched to gs-multiple)
                     imgs = F.interpolate(imgs, size=ns, mode='bilinear', align_corners=False)
-
+            
+            if opt.multi_scale:
+                sz = random.randrange(imgsz * 0.5, imgsz * 1.5 + gs) // gs * gs  # size
+                sf = sz / max(target_imgs.shape[2:])  # scale factor
+                if sf != 1:
+                    ns = [math.ceil(x * sf / gs) * gs for x in target_imgs.shape[2:]]  # new shape (stretched to gs-multiple)
+                    target_imgs = F.interpolate(target_imgs, size=ns, mode='bilinear', align_corners=False)
+            
+            
+            
             # Forward
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
-                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                loss, discrep = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
                 if opt.quad:
@@ -345,12 +358,75 @@ def train(hyp, opt, device, tb_writer=None):
                 c_optimizer.zero_grad()
                 if ema:
                     ema.update(model)
+            
+            
+            
+            
+            for _ in range(4):
+            
+                # Discrep Minimization
+                with amp.autocast(enabled=cuda):
+                    target_pred = model(target_imgs)
+                    loss, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                    if rank != -1:
+                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                    if opt.quad:
+                        loss *= 4.
+
+                # Backward
+                scaler.scale(loss).backward()
+
+                # Optimize
+                if ni % accumulate == 0:
+                    scaler.step(g_optimizer)  # optimizer.step
+                    scaler.update()
+                    g_optimizer.zero_grad()
+                    if ema:
+                        ema.update(model)
+            
+            
+            
+            
+            
+            
+            
+            # Discrep Maximization
+            with amp.autocast(enabled=cuda):
+                pred = model(imgs)  # forward
+                loss, loss_items = compute_loss(pred, targets.to(device)) # loss scaled by batch_size
+                target_pred = model(target_imgs)
+                loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                loss -= loss2
+                loss_items = torch.cat([loss_items, discrep])
+                
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
+
+            # Backward
+            scaler.scale(loss).backward()
+
+            # Optimize
+            if ni % accumulate == 0:
+                scaler.step(c_optimizer)  # optimizer.step
+                scaler.update()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
+
+
+
+
+
+
+
 
             # Print
             if rank in [-1, 0]:
                 mloss = (mloss * i + loss_items) / (i + 1)  # update mean losses
                 mem = '%.3gG' % (torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0)  # (GB)
-                s = ('%10s' * 2 + '%10.4g' * 6) % (
+                s = ('%10s' * 2 + '%10.4g' * 7) % (
                     '%g/%g' % (epoch, epochs - 1), mem, *mloss, targets.shape[0], imgs.shape[-1])
                 pbar.set_description(s)
 
@@ -405,7 +481,7 @@ def train(hyp, opt, device, tb_writer=None):
                         'metrics/precision', 'metrics/recall', 'metrics/mAP_0.5', 'metrics/mAP_0.5:0.95',
                         'val/box_loss', 'val/obj_loss', 'val/cls_loss',  # val loss
                         'x/lr0', 'x/lr1', 'x/lr2']  # params
-                for x, tag in zip(list(mloss[:-1]) + list(results) + g_lr + c_lr, tags):
+                for x, tag in zip(list(mloss[:-2]) + list(results) + g_lr + c_lr, tags):
                     if tb_writer:
                         tb_writer.add_scalar(tag, x, epoch)  # tensorboard
                     if wandb_logger.wandb:

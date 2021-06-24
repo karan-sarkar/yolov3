@@ -112,13 +112,18 @@ class ComputeLoss:
         for k in 'na', 'nc', 'nl', 'anchors':
             setattr(self, k, getattr(det, k))
 
-    def __call__(self, p, targets, discrep=0):  # predictions, targets, model
+    def __call__(self, p, targets, discrep=False):  # predictions, targets, model
         device = targets.device
         lcls, lbox, lobj, ldis = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
+            if discrep:
+                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.25).float())
+                ldis += discrep * disi * self.balance[i]
+                continue
+            
             b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
             tobj = torch.zeros_like(pi[..., 0], device=device)  # target obj
 
@@ -146,9 +151,7 @@ class ComputeLoss:
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
             
-            if discrep != 0:
-                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.25).float())
-                ldis += discrep * disi * self.balance[i]
+            
             
             obji = self.BCEobj(pi[..., 4], tobj)
             lobj += obji * self.balance[i]  # obj loss
@@ -162,11 +165,11 @@ class ComputeLoss:
         lcls *= self.hyp['cls']
         bs = tobj.shape[0]  # batch size
 
-        loss = lbox + lobj + lcls + ldis
-        if discrep == 0:
+        loss = lbox + lobj + lcls
+        if not discrep:
             return loss * bs, torch.cat((lbox, lobj, lcls, loss)).detach()
         else:
-            return loss * bs, torch.cat((lbox, lobj, lcls, loss, ldis)).detach()
+            return ldis, ldis.detach()
             
     def build_targets(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
