@@ -147,7 +147,7 @@ class ComputeLoss:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
             
             if discrep != 0:
-                disi = self.L1dis(pi[..., 4], pi[..., 4].ge(0.25).float())
+                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.25).float())
                 ldis += discrep * disi * self.balance[i]
             
             obji = self.BCEobj(pi[..., 4], tobj)
