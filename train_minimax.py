@@ -335,7 +335,7 @@ def train(hyp, opt, device, tb_writer=None):
                     ns = [math.ceil(x * sf / gs) * gs for x in target_imgs.shape[2:]]  # new shape (stretched to gs-multiple)
                     target_imgs = F.interpolate(target_imgs, size=ns, mode='bilinear', align_corners=False)
             
-            
+            torch.autograd.set_detect_anomaly(True)
             
             # Forward
             with amp.autocast(enabled=cuda):
