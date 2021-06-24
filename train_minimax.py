@@ -95,8 +95,8 @@ def train(hyp, opt, device, tb_writer=None):
         model = Model(opt.cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
     with torch_distributed_zero_first(rank):
         check_dataset(data_dict)  # check
-    source_train_path = data_dict['source_train']
-    source_test_path = data_dict['source_val']
+    source_train_path = data_dict['train']
+    source_test_path = data_dict['val']
     target_train_path = data_dict['target_train']
     target_test_path = data_dict['target_val']
 

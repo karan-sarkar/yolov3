@@ -8,8 +8,8 @@
 
 # train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
 # train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
-source_train: ../daytime/train/images/  # 128 images
-source_val: ../daytime/val/images/  # 128 images
+train: ../daytime/train/images/  # 128 images
+val: ../daytime/val/images/  # 128 images
 target_train: ../daytime/train/images/  # 128 images
 target_val: ../daytime/val/images/  # 128 images
 
