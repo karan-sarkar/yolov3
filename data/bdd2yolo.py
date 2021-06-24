@@ -10,6 +10,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='BDD100K to COCO format')
     parser.add_argument("--labels")
     parser.add_argument("--image_dir")
+    parser.add_argument("--split")
     parser.add_argument(
           "-s", "--save_path",
           default="",
@@ -29,10 +30,10 @@ def parse_arguments():
 
 
 args = parse_arguments()
-if not os.path.exists(os.path.join(args.save_path, args.flag, 'images')):
-    os.makedirs(os.path.join(args.save_path,  args.flag, 'images'))
-if not os.path.exists(os.path.join(args.save_path,  args.flag, 'labels')):
-    os.makedirs(os.path.join(args.save_path,  args.flag, 'labels'))
+if not os.path.exists(os.path.join(args.save_path, args.flag, args.split, 'images')):
+    os.makedirs(os.path.join(args.save_path,  args.flag, args.split, 'images'))
+if not os.path.exists(os.path.join(args.save_path,  args.flag, args.split, 'labels')):
+    os.makedirs(os.path.join(args.save_path,  args.flag, args.split, 'labels'))
 
 # create BDD training set detections in COCO format
 print('Loading training set...')
@@ -72,10 +73,11 @@ for i in tqdm(labeled_images):
             y2 = label['box2d']['y2']
             category_id = id_dict[label['category']]
             label_text += '\n' + str(category_id) + ' ' + str(x1) + ' ' + str(y1) + ' ' + str(x2 - x1) + ' ' + str(y2 - y1)
-    copyfile(os.path.join(args.image_dir, i['name']), os.path.join(args.save_path,  args.flag, 'images', i['name']))
+    copyfile(os.path.join(args.image_dir, i['name']), os.path.join(args.save_path,  args.flag, args.split, 'images', i['name']))
     if len(label_text) > 0:
         label_text = label_text[1:]
-        with open(os.path.join(args.save_path,  args.flag, 'labels', i['name']), "w") as text_file:
+        name = i['name'][:-3] + 'txt'
+        with open(os.path.join(args.save_path,  args.flag, args.split, 'labels', name), "w") as text_file:
             text_file.write(label_text)
 
     
