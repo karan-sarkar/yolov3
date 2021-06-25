@@ -393,7 +393,7 @@ def train(hyp, opt, device, tb_writer=None):
             
             # Discrep Maximization
             with amp.autocast(enabled=cuda):
-                #pred2 = model(imgs)  # forward
+                pred2 = model(imgs)  # forward
                 #loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
                 target_pred = model(target_imgs)
                 loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
