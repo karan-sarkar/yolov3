@@ -395,10 +395,10 @@ def train(hyp, opt, device, tb_writer=None):
             with amp.autocast(enabled=cuda):
                 #pred2 = model(imgs)  # forward
                 #loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
-                loss1 = torch.zeros(1)
-                items = torch.zeros(4)
                 target_pred = model(target_imgs)
                 loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                loss1 = torch.zeros(1).to(loss2.device)
+                items = torch.zeros(4).to(discrep.device)
                 loss = loss1 - loss2
                 loss_items = torch.cat([items, discrep])
 
