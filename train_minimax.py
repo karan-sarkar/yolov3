@@ -296,6 +296,7 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
         c_optimizer.zero_grad()
+        '''
         for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
             if imgs.shape[0] != target_imgs.shape[0]:
                 break
@@ -464,7 +465,9 @@ def train(hyp, opt, device, tb_writer=None):
                 elif plots and ni == 10 and wandb_logger.wandb:
                     wandb_logger.log({"Mosaics": [wandb_logger.wandb.Image(str(x), caption=x.name) for x in
                                                   save_dir.glob('train*.jpg') if x.exists()]})
-
+        
+        '''
+        
             # end batch ------------------------------------------------------------------------------------------------
         # end epoch ----------------------------------------------------------------------------------------------------
 
@@ -474,9 +477,9 @@ def train(hyp, opt, device, tb_writer=None):
         g_scheduler.step()
         c_scheduler.step()
         
-        for loader in [testloader, target_testloader]:
-            # DDP process 0 or single-GPU
-            if rank in [-1, 0]:
+        if rank in [-1, 0]:
+            for loader in [testloader, target_testloader]:
+            # DDP process 0 or single-GP
                 # mAP
                 ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'gr', 'names', 'stride', 'class_weights'])
                 final_epoch = epoch + 1 == epochs
@@ -541,8 +544,8 @@ def train(hyp, opt, device, tb_writer=None):
 
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
-    for loader in [testloader, target_testloader]:
-        if rank in [-1, 0]:
+    if rank in [-1, 0]:
+        for loader in [testloader, target_testloader]:
             logger.info(f'{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.\n')
             if plots:
                 plot_results(save_dir=save_dir)  # save as results.png

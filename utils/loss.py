@@ -122,7 +122,7 @@ class ComputeLoss:
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
-                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.25).float())
+                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.5).float())
                 ldis += discrep * disi * self.balance[i]
                 continue
             
