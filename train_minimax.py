@@ -265,6 +265,7 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Using {dataloader.num_workers} dataloader workers\n'
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
+    starter = 0
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -296,7 +297,7 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
         c_optimizer.zero_grad()
-        if epoch > 0:
+        if starter > 0:
             for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
                 if imgs.shape[0] != target_imgs.shape[0]:
                     break
@@ -469,7 +470,7 @@ def train(hyp, opt, device, tb_writer=None):
             
                 # end batch ------------------------------------------------------------------------------------------------
         # end epoch ----------------------------------------------------------------------------------------------------
-
+        starter += 1
         # Scheduler
         g_lr = [x['lr'] for x in g_optimizer.param_groups]  # for tensorboard
         c_lr = [x['lr'] for x in c_optimizer.param_groups]  # for tensorboard
