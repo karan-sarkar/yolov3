@@ -296,7 +296,6 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
         c_optimizer.zero_grad()
-        '''
         for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
             if imgs.shape[0] != target_imgs.shape[0]:
                 break
@@ -466,7 +465,6 @@ def train(hyp, opt, device, tb_writer=None):
                     wandb_logger.log({"Mosaics": [wandb_logger.wandb.Image(str(x), caption=x.name) for x in
                                                   save_dir.glob('train*.jpg') if x.exists()]})
         
-        '''
         
             # end batch ------------------------------------------------------------------------------------------------
         # end epoch ----------------------------------------------------------------------------------------------------
