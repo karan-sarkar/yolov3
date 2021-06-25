@@ -339,7 +339,7 @@ def train(hyp, opt, device, tb_writer=None):
             torch.autograd.set_detect_anomaly(True)
             # Forward
             with amp.autocast(enabled=cuda):
-                pred = model(imgs)  # forward
+                pred = model(imgs.clone())  # forward
                 loss, _ = compute_loss(pred, targets.clone().to(device))  # loss scaled by batch_size
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
