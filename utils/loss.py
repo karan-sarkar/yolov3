@@ -112,8 +112,10 @@ class ComputeLoss:
         for k in 'na', 'nc', 'nl', 'anchors':
             setattr(self, k, getattr(det, k))
 
-    def __call__(self, p, targets, discrep=False):  # predictions, targets, model
+    def __call__(self, q, targets, discrep=False):  # predictions, targets, model
         device = targets.device
+        p = [a.to(device) for a in q]
+        
         lcls, lbox, lobj, ldis = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 

@@ -396,6 +396,7 @@ def train(hyp, opt, device, tb_writer=None):
                 target_pred = model(target_imgs)
                 loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
                 loss = loss1 - loss2
+                loss_items = torch.cat([items, discrep])
                 
 
                 
@@ -417,7 +418,7 @@ def train(hyp, opt, device, tb_writer=None):
                 ema.update(model)
 
 
-            loss_items = torch.cat([items, discrep])
+            
 
 
 
