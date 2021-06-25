@@ -43,9 +43,8 @@ class Detect(nn.Module):
         self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)  # output conv
         self.inplace = inplace  # use in-place ops (e.g. slice assignment)
 
-    def forward(self, y):
+    def forward(self, x):
         # x = x.copy()  # for profiling
-        x = y.copy()
         z = []  # inference output
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv

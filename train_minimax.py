@@ -336,7 +336,7 @@ def train(hyp, opt, device, tb_writer=None):
                     target_imgs = F.interpolate(target_imgs, size=ns, mode='bilinear', align_corners=False)
             
 
-            
+            torch.autograd.set_detect_anomaly(True)
             # Forward
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
@@ -393,8 +393,10 @@ def train(hyp, opt, device, tb_writer=None):
             
             # Discrep Maximization
             with amp.autocast(enabled=cuda):
-                pred2 = model(imgs)  # forward
-                loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
+                #pred2 = model(imgs)  # forward
+                #loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
+                loss1 = torch.zeros(1)
+                items = torch.zeros(4)
                 target_pred = model(target_imgs)
                 loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
                 loss = loss1 - loss2
