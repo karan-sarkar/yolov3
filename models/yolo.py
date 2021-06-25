@@ -45,7 +45,7 @@ class Detect(nn.Module):
 
     def forward(self, y):
         # x = x.copy()  # for profiling
-        x = y.clone().to(y.device)
+        x = y.copy()
         z = []  # inference output
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
