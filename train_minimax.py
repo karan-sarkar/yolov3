@@ -349,14 +349,14 @@ def train(hyp, opt, device, tb_writer=None):
             scaler.scale(loss).backward()
 
             # Optimize
-            #if ni % accumulate == 0:
-            scaler.step(g_optimizer)  # optimizer.step
-            scaler.step(c_optimizer)  # optimizer.step
-            scaler.update()
-            g_optimizer.zero_grad()
-            c_optimizer.zero_grad()
-            if ema:
-                ema.update(model)
+            if ni % accumulate == 0:
+                scaler.step(g_optimizer)  # optimizer.step
+                scaler.step(c_optimizer)  # optimizer.step
+                scaler.update()
+                g_optimizer.zero_grad()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
             
             
             
@@ -376,13 +376,13 @@ def train(hyp, opt, device, tb_writer=None):
                 scaler.scale(loss).backward()
 
                 # Optimize
-                #if ni % accumulate == 0:
-                scaler.step(g_optimizer)  # optimizer.step
-                scaler.update()
-                g_optimizer.zero_grad()
-                c_optimizer.zero_grad()
-                if ema:
-                    ema.update(model)
+                if ni % accumulate == 0:
+                    scaler.step(g_optimizer)  # optimizer.step
+                    scaler.update()
+                    g_optimizer.zero_grad()
+                    c_optimizer.zero_grad()
+                    if ema:
+                        ema.update(model)
             
             
             
@@ -406,13 +406,13 @@ def train(hyp, opt, device, tb_writer=None):
             scaler.scale(loss).backward()
 
             # Optimize
-            #if ni % accumulate == 0:
-            scaler.step(c_optimizer)  # optimizer.step
-            scaler.update()
-            g_optimizer.zero_grad()
-            c_optimizer.zero_grad()
-            if ema:
-                ema.update(model)
+            if ni % accumulate == 0:
+                scaler.step(c_optimizer)  # optimizer.step
+                scaler.update()
+                g_optimizer.zero_grad()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
             
             # Discrep Maximization
             with amp.autocast(enabled=cuda):
@@ -429,13 +429,13 @@ def train(hyp, opt, device, tb_writer=None):
             scaler.scale(loss).backward()
 
             # Optimize
-            #if ni % accumulate == 0:
-            scaler.step(c_optimizer)  # optimizer.step
-            scaler.update()
-            g_optimizer.zero_grad()
-            c_optimizer.zero_grad()
-            if ema:
-                ema.update(model)
+            if ni % accumulate == 0:
+                scaler.step(c_optimizer)  # optimizer.step
+                scaler.update()
+                g_optimizer.zero_grad()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
             
             loss_items = torch.cat([items, discrep])
 
