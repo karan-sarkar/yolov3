@@ -171,26 +171,26 @@ class ComputeLoss:
         else:
             return ldis, ldis.detach()
             
-    def build_targets(self, p, targets):
+    def build_targets(self, p, my_targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
-        na, nt = self.na, targets.shape[0]  # number of anchors, targets
+        na, nt = self.na, my_targets.shape[0]  # number of anchors, targets
         tcls, tbox, indices, anch = [], [], [], []
-        gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
-        ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
-        targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
+        gain = torch.ones(7, device=my_targets.device)  # normalized to gridspace gain
+        ai = torch.arange(na, device=my_targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
+        my_targets = torch.cat((my_targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
 
         g = 0.5  # bias
         off = torch.tensor([[0, 0],
                             # [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
                             # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
-                            ], device=targets.device).float() * g  # offsets
+                            ], device=my_targets.device).float() * g  # offsets
 
         for i in range(self.nl):
             anchors = self.anchors[i]
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
 
             # Match targets to anchors
-            t = targets * gain
+            t = my_targets * gain
             if nt:
                 # Matches
                 r = t[:, :, 4:6] / anchors[:, None]  # wh ratio
@@ -207,7 +207,7 @@ class ComputeLoss:
                 t = t.repeat((off.shape[0], 1, 1))[j]
                 offsets = (torch.zeros_like(gxy)[None] + off[:, None])[j]
             else:
-                t = targets[0]
+                t = my_targets[0]
                 offsets = 0
 
             # Define
