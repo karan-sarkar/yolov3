@@ -337,27 +337,26 @@ def train(hyp, opt, device, tb_writer=None):
             
 
             # Forward
-            if ni % 2 == 0:
-                with amp.autocast(enabled=cuda):
-                    pred = model(imgs.clone())  # forward
-                    loss, items = compute_loss(pred, targets.clone().to(device))  # loss scaled by batch_size
-                    if rank != -1:
-                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                    if opt.quad:
-                        loss *= 4.
+            with amp.autocast(enabled=cuda):
+                pred = model(imgs.clone())  # forward
+                loss, items = compute_loss(pred, targets.clone().to(device))  # loss scaled by batch_size
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
 
-                # Backward
-                scaler.scale(loss).backward()
+            # Backward
+            scaler.scale(loss).backward()
 
-                # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(g_optimizer)  # optimizer.step
-                    scaler.step(c_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+            # Optimize
+            #if ni % accumulate == 0:
+            scaler.step(g_optimizer)  # optimizer.step
+            scaler.step(c_optimizer)  # optimizer.step
+            scaler.update()
+            g_optimizer.zero_grad()
+            c_optimizer.zero_grad()
+            if ema:
+                ema.update(model)
             
             
             
@@ -377,46 +376,45 @@ def train(hyp, opt, device, tb_writer=None):
                 scaler.scale(loss).backward()
 
                 # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(g_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+                #if ni % accumulate == 0:
+                scaler.step(g_optimizer)  # optimizer.step
+                scaler.update()
+                g_optimizer.zero_grad()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
             
             
             
             
             
             
-            if ni % 2 == 1:
-                # Discrep Maximization
-                with amp.autocast(enabled=cuda):
-                    pred2 = model(imgs.clone())  # forward
-                    loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
-                    target_pred = model(target_imgs)
-                    loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
-                    loss = loss1 - loss2
-                    
+            # Discrep Maximization
+            with amp.autocast(enabled=cuda):
+                pred2 = model(imgs.clone())  # forward
+                loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
+                target_pred = model(target_imgs)
+                loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                loss = loss1 - loss2
+                
 
-                    
-                    if rank != -1:
-                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                    if opt.quad:
-                        loss *= 4.
+                
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
 
-                # Backward
-                scaler.scale(loss).backward()
+            # Backward
+            scaler.scale(loss).backward()
 
-                # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(c_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+            # Optimize
+            #if ni % accumulate == 0:
+            scaler.step(c_optimizer)  # optimizer.step
+            scaler.update()
+            g_optimizer.zero_grad()
+            c_optimizer.zero_grad()
+            if ema:
+                ema.update(model)
 
 
             loss_items = torch.cat([items, discrep])
