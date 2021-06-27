@@ -496,7 +496,9 @@ def train(hyp, opt, device, tb_writer=None):
                                                  plots=plots and final_epoch,
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
-                                                 is_coco=is_coco)
+                                                 is_coco=is_coco,
+                                                 conf_thres=opt.conf,
+                                                 iou_thres=opt.iou)
                 target_results, target_maps, target_times = test.test(data_dict,
                                                  batch_size=batch_size * 2,
                                                  imgsz=imgsz_test,
@@ -509,7 +511,9 @@ def train(hyp, opt, device, tb_writer=None):
                                                  plots=plots and final_epoch,
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
-                                                 is_coco=is_coco)
+                                                 is_coco=is_coco,
+                                                 conf_thres=opt.conf,
+                                                 iou_thres=opt.iou)
 
             # Write
             with open(results_file, 'a') as f:
@@ -576,8 +580,8 @@ def train(hyp, opt, device, tb_writer=None):
                     results, _, _ = test.test(opt.data,
                                               batch_size=batch_size * 2,
                                               imgsz=imgsz_test,
-                                              conf_thres=0.001,
-                                              iou_thres=0.7,
+                                              conf_thres=opt.conf,
+                                              iou_thres=opt.iou,
                                               model=attempt_load(m, device).half(),
                                               single_cls=opt.single_cls,
                                               dataloader=testloader,
@@ -588,8 +592,8 @@ def train(hyp, opt, device, tb_writer=None):
                     test_results, _, _ = test.test(opt.data,
                                               batch_size=batch_size * 2,
                                               imgsz=imgsz_test,
-                                              conf_thres=0.001,
-                                              iou_thres=0.7,
+                                              conf_thres=opt.conf,
+                                              iou_thres=opt.iou,
                                               model=attempt_load(m, device).half(),
                                               single_cls=opt.single_cls,
                                               dataloader=target_testloader,
@@ -649,6 +653,8 @@ if __name__ == '__main__':
     parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box image logging interval for W&B')
     parser.add_argument('--save_period', type=int, default=-1, help='Log model after every "save_period" epoch')
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
+    parser.add_argument('--conf', type = float)
+    parser.add_argument('--iou', type = float)
     opt = parser.parse_args()
 
     # Set DDP variables
