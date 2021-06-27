@@ -297,7 +297,7 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
         c_optimizer.zero_grad()
-        if starter > 0:
+        if starter >= 0:
             for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
                 if imgs.shape[0] != target_imgs.shape[0]:
                     break

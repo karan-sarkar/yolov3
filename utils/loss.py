@@ -95,7 +95,7 @@ class ComputeLoss:
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
-        self.L1dis = nn.L1Loss()
+        self.L1dis = nn.L1Loss(reduction='none')
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
@@ -122,7 +122,8 @@ class ComputeLoss:
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
-                disi = self.L1dis(pi[..., 4].sigmoid(), pi[..., 4].sigmoid().ge(0.5).float())
+                mask = pi[..., 4].sigmoid().ge(0.01).float()
+                disi = (self.L1dis(pi[..., 4].sigmoid(), mask) * ( (1 - mask) * 98 + 1)).mean()
                 ldis += discrep * disi * self.balance[i]
                 continue
             
