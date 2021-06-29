@@ -188,7 +188,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # DP mode
     if cuda and rank == -1 and torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model, find_unused_parameters=True)
+        model = torch.nn.DataParallel(model)
 
     # SyncBatchNorm
     if opt.sync_bn and cuda and rank != -1:
@@ -238,7 +238,7 @@ def train(hyp, opt, device, tb_writer=None):
     if cuda and rank != -1:
         model = DDP(model, device_ids=[opt.local_rank], output_device=opt.local_rank,
                     # nn.MultiheadAttention incompatibility with DDP https://github.com/pytorch/pytorch/issues/26698
-                    find_unused_parameters=any(isinstance(layer, nn.MultiheadAttention) for layer in model.modules()))
+                    find_unused_parameters=True)
 
     # Model parameters
     hyp['box'] *= 3. / nl  # scale to layers
