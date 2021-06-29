@@ -338,8 +338,8 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Forward
                 with amp.autocast(enabled=cuda):
-                    pred = model(imgs.clone())  # forward
-                    loss, items = compute_loss(pred, targets.clone().to(device))  # loss scaled by batch_size
+                    pred = model(imgs)  # forward
+                    loss, items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                     if rank != -1:
                         loss *= opt.world_size  # gradient averaged between devices in DDP mode
                     if opt.quad:
@@ -356,6 +356,7 @@ def train(hyp, opt, device, tb_writer=None):
                     if ema:
                         ema.update(model)
                 
+                del loss, pred, items
                 
                 for i, p in enumerate(model.parameters()):
                     if i > threshold:
@@ -382,6 +383,8 @@ def train(hyp, opt, device, tb_writer=None):
                         g_optimizer.zero_grad()
                         if ema:
                             ema.update(model)
+                    
+                     del loss, target_pred, discrep
                 
                 
                 for i, p in enumerate(model.parameters()):
@@ -416,6 +419,8 @@ def train(hyp, opt, device, tb_writer=None):
                     if ema:
                         ema.update(model)
                 
+                del loss, loss2, target_pred
+                
                 # Discrep Maximization
                 with amp.autocast(enabled=cuda):
                     pred2 = model(imgs.clone())  # forward
@@ -439,7 +444,7 @@ def train(hyp, opt, device, tb_writer=None):
                         ema.update(model)
                 
                 loss_items = torch.cat([items, discrep])
-
+                del items, loss, loss1, pred2
 
                 for i, p in enumerate(model.parameters()):
                     if i <= threshold:
