@@ -124,16 +124,16 @@ def train(hyp, opt, device, tb_writer=None):
             pg1.append(v.weight)  # apply decay
 
     if opt.adam:
-        g_optimizer = optim.Adam(pg0[:len(pg0)//2], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
-        c_optimizer = optim.Adam(pg0[len(pg0)//2:], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        g_optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        c_optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
     else:
-        g_optimizer = optim.SGD(pg0[:len(pg0)//2], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-        c_optimizer = optim.SGD(pg0[len(pg0)//2:], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        g_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        c_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
     
-    g_optimizer.add_param_group({'params': pg1[:len(pg1)//2], 'weight_decay': hyp['weight_decay']})
-    c_optimizer.add_param_group({'params': pg1[len(pg1)//2:], 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
-    g_optimizer.add_param_group({'params': pg2[:len(pg2)//2]})  # add pg2 (biases)
-    c_optimizer.add_param_group({'params': pg2[len(pg2)//2:]})  # add pg2 (biases)
+    g_optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})
+    c_optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
+    g_optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
+    c_optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
     logger.info('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
     del pg0, pg1, pg2
     
@@ -296,7 +296,6 @@ def train(hyp, opt, device, tb_writer=None):
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         g_optimizer.zero_grad()
-        c_optimizer.zero_grad()
         if starter >= 0:
             for i, ((imgs, targets, paths, _), (target_imgs, target_targets, target_paths, _)) in pbar:  # batch -------------------------------------------------------------
                 if imgs.shape[0] != target_imgs.shape[0]:
@@ -312,11 +311,6 @@ def train(hyp, opt, device, tb_writer=None):
                     # model.gr = np.interp(ni, xi, [0.0, 1.0])  # iou loss ratio (obj_loss = 1.0 or iou)
                     accumulate = max(1, np.interp(ni, xi, [1, nbs / total_batch_size]).round())
                     for j, x in enumerate(g_optimizer.param_groups):
-                        # bias lr falls from 0.1 to lr0, all other lrs rise from 0.0 to lr0
-                        x['lr'] = np.interp(ni, xi, [hyp['warmup_bias_lr'] if j == 2 else 0.0, x['initial_lr'] * lf(epoch)])
-                        if 'momentum' in x:
-                            x['momentum'] = np.interp(ni, xi, [hyp['warmup_momentum'], hyp['momentum']])
-                    for j, x in enumerate(c_optimizer.param_groups):
                         # bias lr falls from 0.1 to lr0, all other lrs rise from 0.0 to lr0
                         x['lr'] = np.interp(ni, xi, [hyp['warmup_bias_lr'] if j == 2 else 0.0, x['initial_lr'] * lf(epoch)])
                         if 'momentum' in x:
@@ -337,6 +331,10 @@ def train(hyp, opt, device, tb_writer=None):
                         ns = [math.ceil(x * sf / gs) * gs for x in target_imgs.shape[2:]]  # new shape (stretched to gs-multiple)
                         target_imgs = F.interpolate(target_imgs, size=ns, mode='bilinear', align_corners=False)
                 
+                
+                threshold = len(list(model.parameters())) // 2
+                
+                
 
                 # Forward
                 with amp.autocast(enabled=cuda):
@@ -352,16 +350,16 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Optimize
                 if ni % accumulate == 0:
-                    scaler.step(g_optimizer)  # optimizer.step
-                    scaler.step(c_optimizer)  # optimizer.step
+                    scaler.step(g_optimizer)  # c_optimizer.step
                     scaler.update()
                     g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
                     if ema:
                         ema.update(model)
                 
                 
-                
+                for i, p in enumerate(model.parameters()):
+                    if i > threshold:
+                        p.requires_grad = False
                 
                 for _ in range(4):
                 
@@ -382,12 +380,15 @@ def train(hyp, opt, device, tb_writer=None):
                         scaler.step(g_optimizer)  # optimizer.step
                         scaler.update()
                         g_optimizer.zero_grad()
-                        c_optimizer.zero_grad()
                         if ema:
                             ema.update(model)
                 
                 
-                
+                for i, p in enumerate(model.parameters()):
+                    if i > threshold:
+                        p.requires_grad = True
+                    else:
+                        p.requires_grad = False
                 
                 
                 
@@ -409,10 +410,9 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Optimize
                 if ni % accumulate == 0:
-                    scaler.step(c_optimizer)  # optimizer.step
+                    scaler.step(g_optimizer)  # optimizer.step
                     scaler.update()
                     g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
                     if ema:
                         ema.update(model)
                 
@@ -432,17 +432,18 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Optimize
                 if ni % accumulate == 0:
-                    scaler.step(c_optimizer)  # optimizer.step
+                    scaler.step(g_optimizer)  # optimizer.step
                     scaler.update()
                     g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
                     if ema:
                         ema.update(model)
                 
                 loss_items = torch.cat([items, discrep])
 
 
-                
+                for i, p in enumerate(model.parameters()):
+                    if i <= threshold:
+                        p.requires_grad = True
 
 
 
