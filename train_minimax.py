@@ -384,7 +384,7 @@ def train(hyp, opt, device, tb_writer=None):
                         if ema:
                             ema.update(model)
                     
-                     del loss, target_pred, discrep
+                    del loss, target_pred, discrep
                 
                 
                 for i, p in enumerate(model.parameters()):
