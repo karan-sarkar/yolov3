@@ -339,13 +339,12 @@ def train(hyp, opt, device, tb_writer=None):
                 
 
                 # Forward
-                with amp.autocast(enabled=cuda):
-                    pred = model(imgs.clone())  # forward
-                    loss, items = compute_loss(pred, targets.clone().to(device))  # loss scaled by batch_size
-                    if rank != -1:
-                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                    if opt.quad:
-                        loss *= 4.
+                pred = model(imgs)  # forward
+                loss, items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
 
                 # Backward
                 loss.backward()
@@ -364,16 +363,15 @@ def train(hyp, opt, device, tb_writer=None):
                 for _ in range(4):
                 
                     # Discrep Minimization
-                    with amp.autocast(enabled=cuda):
-                        target_pred = model(target_imgs)
-                        loss, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
-                        if rank != -1:
-                            loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                        if opt.quad:
-                            loss *= 4.
+                    target_pred = model(target_imgs)
+                    loss, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                    if rank != -1:
+                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                    if opt.quad:
+                        loss *= 4.
 
                     # Backward
-                    scaler.scale(loss).backward()
+                    loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
 
@@ -388,20 +386,19 @@ def train(hyp, opt, device, tb_writer=None):
                 
                 
                 # Discrep Maximization
-                with amp.autocast(enabled=cuda):
-                    target_pred = model(target_imgs)
-                    loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
-                    loss = - loss2
-                    
+                target_pred = model(target_imgs)
+                loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                loss = - loss2
+                
 
-                    
-                    if rank != -1:
-                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                    if opt.quad:
-                        loss *= 4.
+                
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
 
                 # Backward
-                scaler.scale(loss).backward()
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
@@ -411,18 +408,17 @@ def train(hyp, opt, device, tb_writer=None):
                     ema.update(model)
                 
                 # Discrep Maximization
-                with amp.autocast(enabled=cuda):
-                    pred2 = model(imgs.clone())  # forward
-                    loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
-                    loss = loss1
+                pred2 = model(imgs)  # forward
+                loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
+                loss = loss1
 
-                    if rank != -1:
-                        loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                    if opt.quad:
-                        loss *= 4.
+                if rank != -1:
+                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
+                if opt.quad:
+                    loss *= 4.
 
                 # Backward
-                scaler.scale(loss).backward()
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
