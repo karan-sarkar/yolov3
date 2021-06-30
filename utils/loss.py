@@ -124,7 +124,7 @@ class ComputeLoss:
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
                 n_class = pi[..., 5:].size(-1) + 1
-                data = torch.cat([1 - pi[..., 4].sigmoid(), pi[..., 5:].sigmoid()], -1).view(-1, n_class)
+                data = torch.cat([1 - pi[..., 4].unsqueeze(-1).sigmoid(), pi[..., 5:].sigmoid()], -1).view(-1, n_class)
                 mx = data.argmax(-1)
                 mx = F.one_hot(mx, n_class)
                 disi = self.L1dis(data, mx)
