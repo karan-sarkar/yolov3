@@ -384,28 +384,7 @@ def train(hyp, opt, device, tb_writer=None):
                 
                 
                 
-                
-                # Discrep Maximization
-                target_pred = model(target_imgs)
-                loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
-                loss = - loss2
-                
 
-                
-                if rank != -1:
-                    loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                if opt.quad:
-                    loss *= 4.
-
-                # Backward
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
-
-                # Optimize
-                c_optimizer.step()  # optimizer.step
-                c_optimizer.zero_grad()
-                if ema:
-                    ema.update(model)
                 
                 # Discrep Maximization
                 target_pred = model(target_imgs)
