@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from utils.general import bbox_iou
 from utils.torch_utils import is_parallel
@@ -94,8 +95,8 @@ class ComputeLoss:
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device), reduction='none')
-        self.L1dis = nn.L1Loss(reduction='none')
+        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
+        self.L1dis = nn.L1Loss()
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
@@ -122,9 +123,12 @@ class ComputeLoss:
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
-                mask = pi[..., 4].sigmoid().ge(0.5).float()
-                disi = (self.L1dis(pi[..., 4].sigmoid(), mask)).mean()
-                ldis += discrep * disi * self.balance[i]
+                n_class = pi[..., 5:].size(-1) + 1
+                data = torch.cat([1 - pi[..., 4].sigmoid(), pi[..., 5:].sigmoid()], -1).view(-1, n_class)
+                mx = data.argmax(-1)
+                mx = F.one_hot(mx, n_class)
+                disi = self.L1dis(data, mx)
+                ldis += disi * self.balance[i]
                 continue
             
             b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
@@ -153,7 +157,7 @@ class ComputeLoss:
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
-            
+            '''
             x = pi[..., 4].view(pi[..., 4].size(0), -1)
             batch, n_priors = x.shape
             y = tobj.view(batch, n_priors)
@@ -170,8 +174,9 @@ class ComputeLoss:
             hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)
             conf_loss_hard_neg = conf_loss_neg[hard_negatives]
             conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
+            '''
             
-            lobj += 0.01 * conf_loss * self.balance[i]  # obj loss
+            lobj += BCEobj(pi[..., 4], tobj) * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
