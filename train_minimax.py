@@ -238,7 +238,7 @@ def train(hyp, opt, device, tb_writer=None):
     if cuda and rank != -1:
         model = DDP(model, device_ids=[opt.local_rank], output_device=opt.local_rank,
                     # nn.MultiheadAttention incompatibility with DDP https://github.com/pytorch/pytorch/issues/26698
-                    find_unused_parameters=any(isinstance(layer, nn.MultiheadAttention) for layer in model.modules()))
+                    find_unused_parameters=any(isinstance(layer, nn.MultiheadAttention) for layer in model.modules()), broadcast_buffers=False)
 
     # Model parameters
     hyp['box'] *= 3. / nl  # scale to layers
