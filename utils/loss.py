@@ -159,7 +159,7 @@ class ComputeLoss:
             y = tobj.view(batch, n_priors)
             
             n_positives = y.sum(dim=1)
-            n_hard_negatives = 3 * n_positives
+            n_hard_negatives = 10 * n_positives
             conf_loss_all = self.BCEobj(x, y)
             positive_priors = y.ge(0.5)
             conf_loss_pos = conf_loss_all[positive_priors]
