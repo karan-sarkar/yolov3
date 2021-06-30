@@ -176,7 +176,7 @@ class ComputeLoss:
             conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
             '''
             
-            lobj += BCEobj(pi[..., 4], tobj) * self.balance[i]  # obj loss
+            lobj += self.BCEobj(pi[..., 4], tobj) * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
