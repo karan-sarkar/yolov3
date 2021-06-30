@@ -124,16 +124,16 @@ def train(hyp, opt, device, tb_writer=None):
             pg1.append(v.weight)  # apply decay
 
     if opt.adam:
-        g_optimizer = optim.Adam(pg0[:len(pg0)//2], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
-        c_optimizer = optim.Adam(pg0[len(pg0)//2:], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        g_optimizer = optim.Adam(pg0[:2*len(pg0)//3], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        c_optimizer = optim.Adam(pg0[2*len(pg0)//3:], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
     else:
-        g_optimizer = optim.SGD(pg0[:len(pg0)//2], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-        c_optimizer = optim.SGD(pg0[len(pg0)//2:], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        g_optimizer = optim.SGD(pg0[:2*len(pg0)//3], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        c_optimizer = optim.SGD(pg0[2*len(pg0)//3:], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
     
-    g_optimizer.add_param_group({'params': pg1[:len(pg1)//2], 'weight_decay': hyp['weight_decay']})
-    c_optimizer.add_param_group({'params': pg1[len(pg1)//2:], 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
-    g_optimizer.add_param_group({'params': pg2[:len(pg2)//2]})  # add pg2 (biases)
-    c_optimizer.add_param_group({'params': pg2[len(pg2)//2:]})  # add pg2 (biases)
+    g_optimizer.add_param_group({'params': pg1[:2*len(pg1)//3], 'weight_decay': hyp['weight_decay']})
+    c_optimizer.add_param_group({'params': pg1[2*len(pg1)//3:], 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
+    g_optimizer.add_param_group({'params': pg2[:2*len(pg2)//3]})  # add pg2 (biases)
+    c_optimizer.add_param_group({'params': pg2[2*len(pg2)//3:]})  # add pg2 (biases)
     logger.info('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
     del pg0, pg1, pg2
     
@@ -349,6 +349,7 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Backward
                 scaler.scale(loss).backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
                 if ni % accumulate == 0:
@@ -376,6 +377,7 @@ def train(hyp, opt, device, tb_writer=None):
 
                     # Backward
                     scaler.scale(loss).backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                     # Optimize
                     if ni % accumulate == 0:
@@ -406,6 +408,7 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Backward
                 scaler.scale(loss).backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
                 if ni % accumulate == 0:
@@ -429,6 +432,7 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Backward
                 scaler.scale(loss).backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
                 if ni % accumulate == 0:

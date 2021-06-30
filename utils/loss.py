@@ -169,7 +169,7 @@ class ComputeLoss:
             hardness_ranks = torch.LongTensor(range(n_priors)).unsqueeze(0).expand_as(conf_loss_neg).to(device)
             hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)
             conf_loss_hard_neg = conf_loss_neg[hard_negatives]
-            conf_loss = 0.01 * (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
+            conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
             
             lobj += conf_loss * self.balance[i]  # obj loss
             if self.autobalance:
