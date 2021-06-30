@@ -348,18 +348,15 @@ def train(hyp, opt, device, tb_writer=None):
                         loss *= 4.
 
                 # Backward
-                scaler.scale(loss).backward()
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
-                # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(g_optimizer)  # optimizer.step
-                    scaler.step(c_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+                g_optimizer.step()  # optimizer.step
+                c_optimizer.step()  # optimizer.step
+                g_optimizer.zero_grad()
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
                 
                 
                 
@@ -379,14 +376,11 @@ def train(hyp, opt, device, tb_writer=None):
                     scaler.scale(loss).backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
-                    # Optimize
-                    if ni % accumulate == 0:
-                        scaler.step(g_optimizer)  # optimizer.step
-                        scaler.update()
-                        g_optimizer.zero_grad()
-                        c_optimizer.zero_grad()
-                        if ema:
-                            ema.update(model)
+
+                    g_optimizer.step()  # optimizer.step
+                    g_optimizer.zero_grad()
+                    if ema:
+                        ema.update(model)
                 
                 
                 
@@ -411,13 +405,10 @@ def train(hyp, opt, device, tb_writer=None):
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(c_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+                c_optimizer.step()  # optimizer.step
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
                 
                 # Discrep Maximization
                 with amp.autocast(enabled=cuda):
@@ -435,13 +426,10 @@ def train(hyp, opt, device, tb_writer=None):
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
 
                 # Optimize
-                if ni % accumulate == 0:
-                    scaler.step(c_optimizer)  # optimizer.step
-                    scaler.update()
-                    g_optimizer.zero_grad()
-                    c_optimizer.zero_grad()
-                    if ema:
-                        ema.update(model)
+                c_optimizer.step()  # optimizer.step
+                c_optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
                 
                 loss_items = torch.cat([items, discrep])
 
