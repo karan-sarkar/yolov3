@@ -159,7 +159,7 @@ class ComputeLoss:
             y = tobj.view(batch, n_priors)
             
             n_positives = y.sum(dim=1)
-            n_hard_negatives = 10 * n_positives
+            n_hard_negatives = 3 * n_positives
             conf_loss_all = self.BCEobj(x, y)
             positive_priors = y.ge(0.5)
             conf_loss_pos = conf_loss_all[positive_priors]
@@ -171,7 +171,7 @@ class ComputeLoss:
             conf_loss_hard_neg = conf_loss_neg[hard_negatives]
             conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
             
-            lobj += conf_loss * self.balance[i]  # obj loss
+            lobj += 0.01 * conf_loss * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
