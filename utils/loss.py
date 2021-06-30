@@ -94,7 +94,7 @@ class ComputeLoss:
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
+        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device), reduction='none')
         self.L1dis = nn.L1Loss(reduction='none')
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
@@ -123,7 +123,7 @@ class ComputeLoss:
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
                 mask = pi[..., 4].sigmoid().ge(0.01).float()
-                disi = (self.L1dis(pi[..., 4].sigmoid(), mask) * ( (1 - mask) * 98 + 1)).mean()
+                disi = (self.L1dis(pi[..., 4].sigmoid(), mask)).mean()
                 ldis += discrep * disi * self.balance[i]
                 continue
             
@@ -154,10 +154,24 @@ class ComputeLoss:
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
             
+            x = pi[..., 4].view(pi[..., 4].size(0), -1)
+            batch, n_priors = x.shape
+            y = tobj.view(batch, n_priors)
             
+            n_positives = y.sum(dim=1)
+            n_hard_negatives = 3 * n_positives
+            conf_loss_all = self.BCEobj(x, y)
+            positive_priors = y.ge(0.5)
+            conf_loss_pos = conf_loss_all[positive_priors]
+            conf_loss_neg = conf_loss_all.clone()
+            conf_loss_neg[positive_priors] = 0. 
+            conf_loss_neg, _ = conf_loss_neg.sort(dim=1, descending=True)
+            hardness_ranks = torch.LongTensor(range(n_priors)).unsqueeze(0).expand_as(conf_loss_neg).to(device)
+            hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)
+            conf_loss_hard_neg = conf_loss_neg[hard_negatives]
+            conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
             
-            obji = self.BCEobj(pi[..., 4], tobj)
-            lobj += obji * self.balance[i]  # obj loss
+            lobj += conf_loss * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
