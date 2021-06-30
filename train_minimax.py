@@ -388,6 +388,7 @@ def train(hyp, opt, device, tb_writer=None):
                 
                 
                 for i, (n, p) in enumerate(model.named_parameters()):
+                    print(n)
                     if 'head' in n:
                         p.requires_grad = True
                     else:
