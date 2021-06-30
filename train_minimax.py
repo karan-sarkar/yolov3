@@ -364,7 +364,10 @@ def train(hyp, opt, device, tb_writer=None):
                 
                     # Discrep Minimization
                     target_pred = model(target_imgs)
-                    loss, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                    loss2, discrep = compute_loss(target_pred, target_targets.to(device), discrep = True)
+                    pred2 = model(imgs)  # forward
+                    loss1, items = compute_loss(pred2, targets.to(device)) # loss scaled by batch_size
+                    loss = loss1 + loss2
                     if rank != -1:
                         loss *= opt.world_size  # gradient averaged between devices in DDP mode
                     if opt.quad:
