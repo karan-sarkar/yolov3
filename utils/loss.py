@@ -157,7 +157,6 @@ class ComputeLoss:
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
-            '''
             x = pi[..., 4].view(pi[..., 4].size(0), -1)
             batch, n_priors = x.shape
             y = tobj.view(batch, n_priors)
@@ -174,9 +173,8 @@ class ComputeLoss:
             hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)
             conf_loss_hard_neg = conf_loss_neg[hard_negatives]
             conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()
-            '''
             
-            lobj += self.BCEobj(pi[..., 4], tobj) * self.balance[i]  # obj loss
+            lobj += conf_loss * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
