@@ -358,8 +358,8 @@ def train(hyp, opt, device, tb_writer=None):
                 
                 del loss, pred, items
                 
-                for i, p in enumerate(model.parameters()):
-                    if i > threshold:
+                for i, (n, p) in enumerate(model.named_parameters()):
+                    if 'head' in n:
                         p.requires_grad = False
                 
                 for _ in range(4):
@@ -387,8 +387,8 @@ def train(hyp, opt, device, tb_writer=None):
                     del loss, target_pred, discrep
                 
                 
-                for i, p in enumerate(model.parameters()):
-                    if i > threshold:
+                for i, (n, p) in enumerate(model.named_parameters()):
+                    if 'head' in n:
                         p.requires_grad = True
                     else:
                         p.requires_grad = False
@@ -446,8 +446,8 @@ def train(hyp, opt, device, tb_writer=None):
                 loss_items = torch.cat([items, discrep])
                 del items, loss, loss1, pred2
 
-                for i, p in enumerate(model.parameters()):
-                    if i <= threshold:
+                for i, (n, p) in enumerate(model.named_parameters()):
+                    if 'head' not in n:
                         p.requires_grad = True
 
 
