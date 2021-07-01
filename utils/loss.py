@@ -129,7 +129,7 @@ class ComputeLoss:
                 mx = F.one_hot(mx, data.size(-1))
                 mask = data[:,1:].max(1)[0].ge(0.05).float().view(-1, 1)
                 
-                disi = (self.L1dis(data, mx) * mask).sum() / (mask.sum() + 1)
+                disi = (self.L1dis(data, mx) * mask).mean(-1).sum() / (mask.sum() + 1)
                 ldis += disi * self.balance[i]
                 continue
             
