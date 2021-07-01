@@ -124,7 +124,7 @@ class ComputeLoss:
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
                 data = pi[..., 5:].sigmoid().view(-1, pi[..., 5:].size(-1))
-                no = pi[..., 4].view(-1)
+                no = pi[..., 4].sigmoid().view(-1)
                 mx = data.max(1)[0]
                 mask = mx.ge(0.05)
                 if mask.sum() > 0:
