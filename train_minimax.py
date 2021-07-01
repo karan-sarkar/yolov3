@@ -116,16 +116,30 @@ def train(hyp, opt, device, tb_writer=None):
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     cg0, cg1, cg2 = [], [], []
-    for m in model.modules():
-        print(type(m))
-    
-    for k, v in model.named_modules():
-        if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
-            pg2.append(v.bias)  # biases
-        if isinstance(v, nn.BatchNorm2d):
-            pg0.append(v.weight)  # no decay
-        elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
-            pg1.append(v.weight)  # apply decay
+    for n, m in model.named_children():
+        if hasattr(m, 'bias') and isinstance(m.bias, nn.Parameter):
+            pg2.append(m.bias)  # biases
+        if isinstance(m, nn.BatchNorm2d):
+            pg0.append(m.weight)  # no decay
+        elif hasattr(m, 'weight') and isinstance(m.weight, nn.Parameter):
+            pg1.append(m.weight)  # apply decay
+        if isinstance(m, Detect):
+            for k, v in m.named_modules():
+                if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+                    cg2.append(v.bias)  # biases
+                if isinstance(v, nn.BatchNorm2d):
+                    cg0.append(v.weight)  # no decay
+                elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+                    cg1.append(v.weight)  # apply decay
+        else:
+            for k, v in m.named_modules():
+                if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+                    pg2.append(v.bias)  # biases
+                if isinstance(v, nn.BatchNorm2d):
+                    pg0.append(v.weight)  # no decay
+                elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+                    pg1.append(v.weight)  # apply decay
+                
     print(len(pg0), len(pg1), len(pg2))
     print(len(cg0), len(cg1), len(cg2))
     if opt.adam:
