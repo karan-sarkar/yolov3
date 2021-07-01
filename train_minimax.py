@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 import test  # import test.py to get mAP after each epoch
 from models.experimental import attempt_load
-from models.yolo import Model
+from models.yolo import Model, Detect
 from utils.autoanchor import check_anchors
 from utils.datasets import create_dataloader
 from utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
@@ -115,25 +115,35 @@ def train(hyp, opt, device, tb_writer=None):
     logger.info(f"Scaled weight_decay = {hyp['weight_decay']}")
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
+    cg0, cg1, cg2 = [], [], []
     for k, v in model.named_modules():
-        if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
-            pg2.append(v.bias)  # biases
-        if isinstance(v, nn.BatchNorm2d):
-            pg0.append(v.weight)  # no decay
-        elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
-            pg1.append(v.weight)  # apply decay
-
+        if isinstance(v, Detect):
+            if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+                cg2.append(v.bias)  # biases
+            if isinstance(v, nn.BatchNorm2d):
+                cg0.append(v.weight)  # no decay
+            elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+                cg1.append(v.weight)  # apply decay
+        else:
+            if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+                pg2.append(v.bias)  # biases
+            if isinstance(v, nn.BatchNorm2d):
+                pg0.append(v.weight)  # no decay
+            elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+                pg1.append(v.weight)  # apply decay
+    print(len(pg0), len(pg1), len(pg2))
+    print(len(cg0), len(cg1), len(cg2))
     if opt.adam:
-        g_optimizer = optim.Adam(pg0[:2*len(pg0)//3], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
-        c_optimizer = optim.Adam(pg0[2*len(pg0)//3:], lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        g_optimizer = optim.Adam(pg0 lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        c_optimizer = optim.Adam(cg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
     else:
-        g_optimizer = optim.SGD(pg0[:2*len(pg0)//3], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-        c_optimizer = optim.SGD(pg0[2*len(pg0)//3:], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        g_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        c_optimizer = optim.SGD(cg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
     
-    g_optimizer.add_param_group({'params': pg1[:2*len(pg1)//3], 'weight_decay': hyp['weight_decay']})
-    c_optimizer.add_param_group({'params': pg1[2*len(pg1)//3:], 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
-    g_optimizer.add_param_group({'params': pg2[:2*len(pg2)//3]})  # add pg2 (biases)
-    c_optimizer.add_param_group({'params': pg2[2*len(pg2)//3:]})  # add pg2 (biases)
+    g_optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})
+    c_optimizer.add_param_group({'params': cg1, 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
+    g_optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
+    c_optimizer.add_param_group({'params': cg2})  # add pg2 (biases)
     logger.info('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
     del pg0, pg1, pg2
     
