@@ -134,7 +134,7 @@ def train(hyp, opt, device, tb_writer=None):
     print(len(pg0), len(pg1), len(pg2))
     print(len(cg0), len(cg1), len(cg2))
     if opt.adam:
-        g_optimizer = optim.Adam(pg0 lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        g_optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
         c_optimizer = optim.Adam(cg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
     else:
         g_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
