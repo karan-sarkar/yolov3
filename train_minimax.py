@@ -116,22 +116,16 @@ def train(hyp, opt, device, tb_writer=None):
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     cg0, cg1, cg2 = [], [], []
+    for m in module.modules():
+        print(type(m))
+    
     for k, v in model.named_modules():
-        print(type(v))
-        if isinstance(v, Detect):
-            if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
-                cg2.append(v.bias)  # biases
-            if isinstance(v, nn.BatchNorm2d):
-                cg0.append(v.weight)  # no decay
-            elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
-                cg1.append(v.weight)  # apply decay
-        else:
-            if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
-                pg2.append(v.bias)  # biases
-            if isinstance(v, nn.BatchNorm2d):
-                pg0.append(v.weight)  # no decay
-            elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
-                pg1.append(v.weight)  # apply decay
+        if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+            pg2.append(v.bias)  # biases
+        if isinstance(v, nn.BatchNorm2d):
+            pg0.append(v.weight)  # no decay
+        elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+            pg1.append(v.weight)  # apply decay
     print(len(pg0), len(pg1), len(pg2))
     print(len(cg0), len(cg1), len(cg2))
     if opt.adam:
