@@ -123,14 +123,12 @@ class ComputeLoss:
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
             if discrep:
-                data = torch.cat([1 - pi[..., 4].sigmoid().unsqueeze(-1), pi[..., 5:].sigmoid()], -1)
-                data = data.view(-1, data.size(-1))
-                mx = data[:,1:].argmax(-1) + 1
-                mx = F.one_hot(mx, data.size(-1))
-                mask = data[:,1:].max(1)[0].ge(0.05).float()
-                m = data[:,1:].max(1)[0].ge(0.05)
-                if m.sum() > 0:
-                    disi = self.L1dis(data, mx)[m].mean()
+                data = pi[..., 5:].sigmoid().view(-1, pi[..., 5:].size(-1))
+                no = pi[..., 4].view(-1)
+                mx = data.max(1)[0]
+                mask = mx.ge(0.05)
+                if mask.sum() > 0:
+                    disi = self.L1dis(mx, torch.ones_like(mx))[mask].mean() + self.L1dis(no, torch.zeros_like(no))[mask].mean()
                     ldis += disi * self.balance[i]
                 continue
             
