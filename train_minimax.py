@@ -146,17 +146,19 @@ def train(hyp, opt, device, tb_writer=None):
     print(len(cg0), len(cg1), len(cg2))
     if opt.adam:
         g_optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
-        c_optimizer = optim.Adam(cg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        #c_optimizer = optim.Adam(cg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
+        c_optimizer.= optim.Adam({'params': cg1, 'weight_decay': hyp['weight_decay']}, betas=(hyp['momentum'], 0.999))
     else:
         g_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-        c_optimizer = optim.SGD(cg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        #c_optimizer = optim.SGD(cg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        c_optimizer = optim.SGD({'params': cg1, 'weight_decay': hyp['weight_decay']}, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
     
     g_optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})
-    c_optimizer.add_param_group({'params': cg1, 'weight_decay': hyp['weight_decay']})  # add pg1 with weight_decay
+      # add pg1 with weight_decay
     g_optimizer.add_param_group({'params': pg2})  # add pg2 (biases)
     c_optimizer.add_param_group({'params': cg2})  # add pg2 (biases)
     logger.info('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
-    del pg0, pg1, pg2
+    del pg0, pg1, pg2, cg0, cg1, cg2
     
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     # https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#OneCycleLR
