@@ -116,6 +116,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     cg0, cg1, cg2 = [], [], []
+    print([n for n, p in model.named_parameters])
     for k, v in model.named_modules():
         if isinstance(v, Detect):
             if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
