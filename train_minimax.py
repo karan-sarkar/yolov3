@@ -116,7 +116,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     cg0, cg1, cg2 = [], [], []
-    for m in module.modules():
+    for m in model.modules():
         print(type(m))
     
     for k, v in model.named_modules():
