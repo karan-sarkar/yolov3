@@ -147,11 +147,11 @@ def train(hyp, opt, device, tb_writer=None):
     if opt.adam:
         g_optimizer = optim.Adam(pg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
         #c_optimizer = optim.Adam(cg0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))  # adjust beta1 to momentum
-        c_optimizer = optim.Adam({'params': cg1, 'weight_decay': hyp['weight_decay']}, betas=(hyp['momentum'], 0.999))
+        c_optimizer = optim.Adam(cg1, lr=hyp['lr0'], weight_decay = hyp['weight_decay'], betas=(hyp['momentum'], 0.999))
     else:
         g_optimizer = optim.SGD(pg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
         #c_optimizer = optim.SGD(cg0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-        c_optimizer = optim.SGD({'params': cg1, 'weight_decay': hyp['weight_decay']}, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        c_optimizer = optim.SGD(cg1, weight_decay = hyp['weight_decay'], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
     
     g_optimizer.add_param_group({'params': pg1, 'weight_decay': hyp['weight_decay']})
       # add pg1 with weight_decay
