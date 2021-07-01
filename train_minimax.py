@@ -123,6 +123,7 @@ def train(hyp, opt, device, tb_writer=None):
             pg0.append(m.weight)  # no decay
         elif hasattr(m, 'weight') and isinstance(m.weight, nn.Parameter):
             pg1.append(m.weight)  # apply decay
+        print(type(m), isinstance(m, Detect))
         if isinstance(m, Detect):
             for k, v in m.named_modules():
                 if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
