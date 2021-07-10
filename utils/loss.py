@@ -120,8 +120,7 @@ class ComputeLoss:
         
         # Losses
         for i, (pi, qi) in enumerate(zip(p, q)):  # layer index, layer predictions
-            if discrep:
-                ldis += self.L1dis(pi[..., 4].sigmoid(), qi[..., 4].sigmoid()) * self.balance[i]
+            ldis += self.L1dis(pi[..., 4].sigmoid(), qi[..., 4].sigmoid()) * self.balance[i]
         return ldis
     
     
