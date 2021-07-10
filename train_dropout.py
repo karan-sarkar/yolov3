@@ -342,7 +342,7 @@ def train(hyp, opt, device, tb_writer=None):
                     
                     loss, items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                     discrep = compute_loss.discrep(target_pred1, target_pred2, target_targets.to(device))
-                    if opt.discrep:
+                    if opt.discrep > 0:
                         loss += discrep
                     if rank != -1:
                         loss *= opt.world_size  # gradient averaged between devices in DDP mode
