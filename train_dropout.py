@@ -342,7 +342,8 @@ def train(hyp, opt, device, tb_writer=None):
                     
                     loss, items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                     discrep = compute_loss.discrep(target_pred1, target_pred2, target_targets.to(device))
-                    loss += discrep
+                    if opt.discrep:
+                        loss += discrep
                     if rank != -1:
                         loss *= opt.world_size  # gradient averaged between devices in DDP mode
                     if opt.quad:
@@ -571,6 +572,7 @@ if __name__ == '__main__':
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
     parser.add_argument('--conf', type = float)
     parser.add_argument('--iou', type = float)
+    parser.add_argument('--discrep', type = float)
     opt = parser.parse_args()
 
     # Set DDP variables
